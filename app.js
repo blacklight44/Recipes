@@ -6,13 +6,12 @@ const app = express();
 const path = require("path");
 //ejs nin template engine olarak belirlenmesi
 const ejs = require("ejs");
+const expressLayouts = require("express-ejs-layouts");
+app.use(expressLayouts);
 app.set("view engine", "ejs");
 //viewin yolunun default halini tanımladık
 app.set("views", path.resolve(__dirname, "./src/views"));
 
-//
-const expressLayouts = require("express-ejs-layouts");
-app.use(expressLayouts);
 //
 app.use(express.static("public"));
 

@@ -7,24 +7,18 @@
         <div class="p-5">
           <div class="text-center">
             <h1 class="h4 text-gray-900 mb-4">Kullanıcı Oluşturun</h1>
-
-            <!-- eğer hata varsa mesaj componentini çağırıyoruz -->
-            <% if (locals.validation_error != undefined) { %> <%-
-            include('./partials/_mesaj') %> <% } %>
           </div>
           <!-- name alanlarına göre verileri alacağız name="ad" deyince ad: 'yakup'" taki key değer ad ı temsil eder-->
           <!-- submit butonuna tıklandığında yapılacak işlem action="/register" method="post"  -->
           <!-- router.post('/register', ....) a bir reğuest atar  -->
           <!-- form olduğundan verilerin çözümlenmesi için  app.use(express.urlencoded({ extended: true })) -->
-          <form class="user" action="/register" method="post">
+          <form class="user">
             <div class="form-group row">
               <div class="col-sm-6 mb-3 mb-sm-0">
                 <!-- daha önce doldurulmuş değerleri value olarak inputlara atıyoruz -->
                 <!-- ad,soyad vb bilgileri reg post ta locals a eklediğimizden direk alabiliyoruz  -->
                 <input
                   type="text"
-                  value="<%=  ad  ? ad : ''%>"
-                  name="ad"
                   class="form-control form-control-user"
                   id="exampleFirstName"
                   placeholder="Adınız"
@@ -33,8 +27,6 @@
               <div class="col-sm-6">
                 <input
                   type="text"
-                  value="<%= typeof soyad != 'undefined' ? soyad : ''%>"
-                  name="soyad"
                   class="form-control form-control-user"
                   id="exampleLastName"
                   placeholder="Soyadınız"
@@ -44,8 +36,6 @@
             <div class="form-group">
               <input
                 type="email"
-                value="<%= typeof email != 'undefined' ? email : ''%> "
-                name="email"
                 class="form-control form-control-user"
                 id="exampleInputEmail"
                 placeholder="Emailiniz"
@@ -55,8 +45,6 @@
               <div class="col-sm-6 mb-3 mb-sm-0">
                 <input
                   type="password"
-                  value="<%= typeof sifre != 'undefined' ? sifre : '' %>"
-                  name="sifre"
                   class="form-control form-control-user"
                   id="exampleInputPassword"
                   placeholder="Şifreniz"
@@ -65,8 +53,6 @@
               <div class="col-sm-6">
                 <input
                   type="password"
-                  value="<%= typeof resifre != 'undefined' ? resifre : ''%>"
-                  name="resifre"
                   class="form-control form-control-user"
                   id="exampleRepeatPassword"
                   placeholder="Şifrenizi Tekrar Yazın"

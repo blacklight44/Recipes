@@ -8,7 +8,7 @@ router.get(
 );
 router.post(
   "/login",
-
+  validatorMiddleware.validateLogin(),
   authController.login
 );
 //express-validatörde çağırma () ile yapılıyor
@@ -19,7 +19,7 @@ router.get(
 );
 router.post(
   "/register",
-
+  validatorMiddleware.validateNewUser(),
   authController.register
 );
 

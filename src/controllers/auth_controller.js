@@ -1,10 +1,7 @@
-const { validationResult } = require("express-validator"); //validatör hatalar için
-const User = require("../model/user_model");
+const { validationResult } = require("express-validator"); //validatör hatalar
+
 const passport = require("passport");
 require("../config/passport_local")(passport);
-const bcrypt = require("bcrypt");
-const nodemailer = require("nodemailer");
-const jwt = require("jsonwebtoken");
 
 const loginFormunuGoster = (req, res, next) => {
   res.render("login", {
@@ -14,7 +11,8 @@ const loginFormunuGoster = (req, res, next) => {
 };
 
 const login = (req, res, next) => {};
-
+const hatalar = validationResult(req);
+// console.log(hatalarDizisi);
 const registerFormunuGoster = (req, res, next) => {
   res.render("register", {
     layout: "./layout/auth_layout.ejs",
@@ -22,7 +20,10 @@ const registerFormunuGoster = (req, res, next) => {
   });
 };
 
-const register = async (req, res, next) => {};
+const register = async (req, res, next) => {
+  const hatalar = validationResult(req); //validationda gelen hatalar
+  // console.log(hatalarDizisi);
+};
 
 const forgetPasswordFormunuGoster = (req, res, next) => {
   res.render("forget_password", {

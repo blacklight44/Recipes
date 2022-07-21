@@ -11,10 +11,12 @@
               <div class="text-center">
                 <h1 class="h4 text-gray-900 mb-4">Hoş Geldiniz</h1>
               </div>
-              <form class="user">
+              <form class="user" action="/login" method="post">
                 <div class="form-group">
                   <input
                     type="email"
+                    value="<%=  email ? email : ''%> "
+                    name="email"
                     class="form-control form-control-user"
                     id="exampleInputEmail"
                     aria-describedby="emailHelp"
@@ -24,6 +26,8 @@
                 <div class="form-group">
                   <input
                     type="password"
+                    value="<%=  sifre  ? sifre : '' %>"
+                    name="sifre"
                     class="form-control form-control-user"
                     id="exampleInputPassword"
                     placeholder="Şifreniz"

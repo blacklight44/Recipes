@@ -1,5 +1,5 @@
 const { validationResult } = require("express-validator"); //validatör hatalar
-
+const User = require("../model/user_model");
 // const passport = require("passport");
 // require("../config/passport_local")(passport);
 
@@ -43,6 +43,37 @@ const register = async (req, res, next) => {
     //hata çıktığı durumda responsı tekrar registera yönlendiriyoruz
     //fakat renderdaki gibi parametrelerimizi geçemediğimizden flash kullanıyoruz
     res.redirect("/register"); //registerFormunuGoster e get isteği oluşturuyor
+  } else {
+    //VALİDATİON ERROR YOKSA
+    try {
+      const _user = await User.findOne({ email: req.body.email });
+      // FAKAT MAİL DAHA ÖNCE KAYITLIYSA
+      if (_user) {
+        //daha önceki yapı array olduğundan mesajı array ve msg alanı olan
+        //bir mesaj(element.msg olarak alacağımız için) olarak veriyoruz
+        req.flash("validation_error", [{ msg: "Bu mail kullanımda" }]);
+        //TEKRAR valulara atamak için
+        req.flash("email", req.body.email);
+        req.flash("ad", req.body.ad);
+        req.flash("soyad", req.body.soyad);
+        req.flash("sifre", req.body.sifre);
+        req.flash("resifre", req.body.resifre);
+        //yine redirect
+        res.redirect("/register");
+        //MAİL KAYITLI FAKAT DOĞRULANMAMIŞSA
+      } else {
+        const newUser = new User({
+          email: req.body.email,
+          ad: req.body.ad,
+          soyad: req.body.soyad,
+          sifre: req.body.sifre,
+        });
+        await newUser.save();
+        console.log("kullanıcı kaydedildi");
+      }
+    } catch (err) {
+      console.log(err);
+    }
   }
 };
 

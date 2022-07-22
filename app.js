@@ -20,6 +20,14 @@ app.use(express.static("public"));
 //db baglantısı
 require("./src/config/database");
 //
+const MongoDBStore = require("connect-mongodb-session")(session);
+
+const sessionStore = new MongoDBStore({
+  //bağlanılacak db
+  uri: process.env.MONGODB_CONNECTION_STRING,
+  //collection adı
+  collection: "sessionlar",
+});
 //session ve flash message
 // session için mw her istekte session yoksa oluşturuluyor
 //flash ve passport.js için gerekli flash kendini session içine kor ve sonra kendini siler
@@ -31,6 +39,8 @@ app.use(
     cookie: {
       maxAge: 1000 * 60 * 60 * 24,
     },
+    //session oluşturulurken db ye kayıt et
+    store: sessionStore,
   })
 );
 

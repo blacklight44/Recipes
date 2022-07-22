@@ -15,7 +15,10 @@ const login = (req, res, next) => {
 };
 
 const registerFormunuGoster = (req, res, next) => {
-  console.log(req.flash("validation_error"));
+  req.flash("validation_error").forEach((element) => {
+    console.log(element);
+  });
+
   res.render("register", {
     layout: "./layout/auth_layout.ejs",
     title: "Kayıt Ol",

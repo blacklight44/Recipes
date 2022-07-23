@@ -24,6 +24,10 @@ const UserSchema = new Schema(
       unique: true,
       lowercase: true,
     },
+    emailAktif: {
+      type: Boolean,
+      default: false,
+    },
 
     //hash leyip saklayacağımızdan min max atamıyoruz
     sifre: {

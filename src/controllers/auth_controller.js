@@ -2,6 +2,9 @@ const { validationResult } = require("express-validator"); //validatör hatalar
 const User = require("../model/user_model");
 const passport = require("passport");
 require("../config/passport_local")(passport);
+const bcrypt = require("bcrypt");
+const nodemailer = require("nodemailer");
+const jwt = require("jsonwebtoken");
 
 const loginFormunuGoster = (req, res, next) => {
   res.render("login", {
@@ -66,7 +69,7 @@ const register = async (req, res, next) => {
     try {
       const _user = await User.findOne({ email: req.body.email });
       // FAKAT MAİL DAHA ÖNCE KAYITLIYSA
-      if (_user) {
+      if (_user && _user.emailAktif == true) {
         //daha önceki yapı array olduğundan mesajı array ve msg alanı olan
         //bir mesaj(element.msg olarak alacağımız için) olarak veriyoruz
         req.flash("validation_error", [{ msg: "Bu mail kullanımda" }]);
@@ -79,22 +82,82 @@ const register = async (req, res, next) => {
         //yine redirect
         res.redirect("/register");
         //MAİL KAYITLI FAKAT DOĞRULANMAMIŞSA
-      } else {
+      } else if ((_user && _user.emailAktif == false) || _user == null) {
+        if (_user) {
+          //email aktif değil ama daha önce kayıt varsa varolan kullanıcıyı sil ki tekrar yeniden oluşturabilelim
+          //yoksa email daha önce varolduğundan db den hata alıyoruz
+          await User.findByIdAndRemove({ _id: _user._id });
+        }
         const newUser = new User({
           email: req.body.email,
           ad: req.body.ad,
           soyad: req.body.soyad,
-          sifre: req.body.sifre,
+          sifre: await bcrypt.hash(req.body.sifre, 10),
         });
         await newUser.save();
         console.log("kullanıcı kaydedildi");
-        //flashla  login success ekrana mesaj
-        req.flash("success_message", [{ msg: "Giriş yapabilirsiniz" }]);
+
+        //jwt işlemleri
+        //token içinde saklanacak bilgiler
+        const jwtBilgileri = {
+          id: newUser.id,
+          mail: newUser.email,
+        };
+        //TOKEN in oluşturulması
+        const jwtToken = jwt.sign(
+          jwtBilgileri,
+          process.env.CONFIRM_MAIL_JWT_SECRET,
+          { expiresIn: "1d" }
+        );
+        console.log(jwtToken);
+
+        //MAIL GONDERME ISLEMLERI
+        //maile gönderilecek url içersinde verify routena yönlendiriyoruz
+        const url = process.env.WEB_SITE_URL + "verify?id=" + jwtToken;
+        console.log("gidilecek url:" + url);
+        //kullanılacak servis ve kullanıcı bilgilerinin olduğu nesnesyi tanımlıyoruz
+        let transporter = nodemailer.createTransport({
+          service: "gmail",
+          //https://www.freecodecamp.org/news/use-nodemailer-to-send-emails-from-your-node-js-server/
+          // auth: {
+          //   type: "OAuth2",
+          //   user: process.env.GMAIL_USER,
+          //   pass: process.env.GMAIL_SIFRE,
+          //   clientId: process.env.OAUTH_CLIENTID,
+          //   clientSecret: process.env.OAUTH_CLIENT_SECRET,
+          //   refreshToken: process.env.OAUTH_REFRESH_TOKEN,
+          // },
+          auth: {
+            user: process.env.GMAIL_USER,
+            pass: process.env.GMAIL_SIFRE,
+          },
+        });
+
+        await transporter.sendMail(
+          {
+            from: "Nodejs Uygulaması <jjjacoppp@gmail.com",
+            to: newUser.email,
+            subject: "Emailiniz Lütfen Onaylayın",
+            text: "Emailinizi onaylamak için lütfen şu linki tıklayın:" + url,
+          },
+          (error, info) => {
+            if (error) {
+              console.log("bir hata var" + error);
+            }
+            console.log("Mail gönderildi");
+            console.log(info);
+            transporter.close();
+          }
+        );
+        //flashla mail için login success ekrana mesaj
+        req.flash("success_message", [
+          { msg: "Lütfen mail kutunuzu kontrol edin" },
+        ]);
         //login sayfasına yönlendirme
         res.redirect("/login");
       }
     } catch (err) {
-      console.log(err);
+      console.log("user kaydedilirken hata cıktı " + err);
     }
   }
 };
@@ -127,7 +190,43 @@ const logout = (req, res, next) => {
     //res.send('çıkış yapıldı');
   });
 };
+const verifyMail = (req, res, next) => {
+  //tokendeki id yi alıyoruz
+  const token = req.query.id;
+  if (token) {
+    try {
+      jwt.verify(
+        token,
+        process.env.CONFIRM_MAIL_JWT_SECRET,
+        async (e, decoded) => {
+          if (e) {
+            req.flash("error", "Kod Hatalı veya Süresi Geçmiş");
+            res.redirect("/login");
+          } else {
+            const tokenIcindekiIDDegeri = decoded.id; //tokendeki id yi secreta göre ayrıştırıp veriyor
+            //emailAktifi db de true yapıyoruz
+            const sonuc = await User.findByIdAndUpdate(tokenIcindekiIDDegeri, {
+              emailAktif: true,
+            });
 
+            if (sonuc) {
+              req.flash("success_message", [
+                { msg: "Başarıyla mail onaylandı" },
+              ]);
+              res.redirect("/login");
+            } else {
+              req.flash("error", "Lütfen tekrar kullanıcı oluşturun");
+              res.redirect("/login");
+            }
+          }
+        }
+      );
+    } catch (err) {}
+  } else {
+    req.flash("error", "Token Yok veya Geçersiz");
+    res.redirect("/login");
+  }
+};
 module.exports = {
   loginFormunuGoster,
   registerFormunuGoster,
@@ -136,4 +235,5 @@ module.exports = {
   login,
   forgetPassword,
   logout,
+  verifyMail,
 };

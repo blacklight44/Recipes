@@ -4,7 +4,7 @@ const bcrypt = require("bcrypt");
 //passport nesnesi geçiyoruz parametre olarak
 module.exports = function (passport) {
   //options alanında pasportda randon atanan usaername ve pasword alanlarına bizim register formda name alanında
-  //verdiğimiz değerlere göre kullanıcıyı neyle login edeceksek onları belirtiyoruz (email,sifre) .ejs formdan
+  //verdiğimiz değerlere göre kullanıcıyı neyle login edeceksek onları belirtiyoruz (email,sifre)
   const options = {
     usernameField: "email",
     passwordField: "sifre",
@@ -23,11 +23,13 @@ module.exports = function (passport) {
           return done(null, false, { message: "User bulunamadı" });
         }
         //sifre kıyas
-
-        if (_bulunanUser.sifre !== sifre) {
+        const sifreKontrol = await bcrypt.compare(sifre, _bulunanUser.sifre);
+        if (!sifreKontrol) {
           return done(null, false, { message: "Şifre hatalı" });
         } else {
-          return done(null, _bulunanUser);
+          if (_bulunanUser && _bulunanUser.emailAktif === false) {
+            return done(null, false, { message: "Lütfen emailiniz onaylayın" });
+          } else return done(null, _bulunanUser);
         }
       } catch (err) {
         return done(err);

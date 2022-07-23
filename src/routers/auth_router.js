@@ -38,7 +38,7 @@ router.post(
   validatorMiddleware.validateEmail(),
   authController.forgetPassword
 );
-
+router.get("/verify", authController.verifyMail);
 router.get("/logout", authMiddleware.oturumAcilmis, authController.logout);
 
 module.exports = router;

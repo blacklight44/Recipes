@@ -69,6 +69,7 @@ app.use(passport.session());
 const authRouter = require("./src/routers/auth_router");
 const yonetimRouter = require("./src/routers/yonetim_router");
 app.use("/", authRouter);
+app.use("/yonetim", yonetimRouter);
 // app.get("/login", (req, res) => {
 //   res.render("login", { layout: "./layout/auth_layout.ejs" });
 // });

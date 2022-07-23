@@ -108,6 +108,25 @@ const forgetPasswordFormunuGoster = (req, res, next) => {
 const forgetPassword = async (req, res, next) => {
   res.render("forget_password", { layout: "./layout/auth_layout.ejs" });
 };
+const logout = (req, res, next) => {
+  req.logout(); // session altındaki pasport kısmındaki id yi siliyor
+  //SESSİONUDA SİLMEK İÇİN
+  req.session.destroy((error) => {
+    res.clearCookie("connect.sid");
+    //cookieler silindiğinden flash çalışmıyor
+    //req.flash('success_message', [{ msg: 'Başarıyla çıkış yapıldı' }]);
+    res.render("login", {
+      layout: "./layout/auth_layout.ejs",
+      title: "Giriş Yap",
+      success_message: [{ msg: "Başarıyla çıkış yapıldı" }],
+    });
+    //REDİRECT deyince  saveUninitialized: true yaptığımızdan yeni bir sayfaya geçtiğimizde
+    //yeni bir cookie oluşturuyor bunu res.send le redirect yapmadan ayarlarsak çözülüyor
+    //yada yukardaki gibi
+    //res.redirect('/login');
+    //res.send('çıkış yapıldı');
+  });
+};
 
 module.exports = {
   loginFormunuGoster,
@@ -116,4 +135,5 @@ module.exports = {
   register,
   login,
   forgetPassword,
+  logout,
 };

@@ -48,6 +48,7 @@ app.use(
 app.use(flash());
 app.use((req, res, next) => {
   res.locals.validation_error = req.flash("validation_error");
+  //başarılı registerdan sonra
   res.locals.success_message = req.flash("success_message");
   res.locals.email = req.flash("email");
   res.locals.ad = req.flash("ad");

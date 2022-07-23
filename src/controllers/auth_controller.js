@@ -70,6 +70,10 @@ const register = async (req, res, next) => {
         });
         await newUser.save();
         console.log("kullanıcı kaydedildi");
+        //flashla  login success ekrana mesaj
+        req.flash("success_message", [{ msg: "Giriş yapabilirsiniz" }]);
+        //login sayfasına yönlendirme
+        res.redirect("/login");
       }
     } catch (err) {
       console.log(err);

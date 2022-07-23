@@ -67,6 +67,7 @@ app.use(passport.session());
 
 //routerlar include edilir
 const authRouter = require("./src/routers/auth_router");
+const yonetimRouter = require("./src/routers/yonetim_router");
 app.use("/", authRouter);
 // app.get("/login", (req, res) => {
 //   res.render("login", { layout: "./layout/auth_layout.ejs" });

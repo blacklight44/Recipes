@@ -1,7 +1,7 @@
 const { validationResult } = require("express-validator"); //validatör hatalar
 const User = require("../model/user_model");
-// const passport = require("passport");
-// require("../config/passport_local")(passport);
+const passport = require("passport");
+require("../config/passport_local")(passport);
 
 const loginFormunuGoster = (req, res, next) => {
   res.render("login", {
@@ -12,6 +12,24 @@ const loginFormunuGoster = (req, res, next) => {
 
 const login = (req, res, next) => {
   const hatalar = validationResult(req);
+  // console.log(hatalarDizisi);
+  //input valularını doldurmak için flashla alıyoruz
+  req.flash("email", req.body.email);
+  req.flash("sifre", req.body.sifre);
+  //HATA VARSA logine redirect flash mesajla
+  if (!hatalar.isEmpty()) {
+    req.flash("validation_error", hatalar.array());
+
+    console.log(req.session);
+    res.redirect("/login");
+  } else {
+    //HATA YOKSA AUTH işlemleri
+    passport.authenticate("local", {
+      successRedirect: "/yonetim",
+      failureRedirect: "/login",
+      failureFlash: true,
+    })(req, res, next);
+  }
 };
 
 const registerFormunuGoster = (req, res, next) => {

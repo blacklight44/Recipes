@@ -3,6 +3,7 @@ const express = require("express");
 const app = express();
 const session = require("express-session");
 const flash = require("connect-flash");
+const passport = require("passport");
 //template engine ayarları
 const path = require("path");
 //ejs nin template engine olarak belirlenmesi
@@ -60,6 +61,9 @@ app.use((req, res, next) => {
 
   next();
 });
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 //routerlar include edilir
 const authRouter = require("./src/routers/auth_router");

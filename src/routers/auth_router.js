@@ -26,7 +26,17 @@ router.post(
   validatorMiddleware.validateNewUser(),
   authController.register
 );
-
+//SİFRE UNUTMADA MAİL İLE YÖNLENDİRİLEN YENİ ŞİFRE BELİRLEME SAYFALARI
+router.get("/reset-password/:id/:token", authController.yeniSifreFormuGoster);
+//id ve token bilgisi olmadığı zaman gidilecek route
+//aynı callbace gönderiyoruz veriler olmadığı durumdaki şarta göre çalışıyor
+router.get("/reset-password", authController.yeniSifreFormuGoster);
+//kullanıcı new_password de sifreyi submit edince oluşan post isteğini ele alıyoruz
+router.post(
+  "/reset-password",
+  validatorMiddleware.validateNewPassword(),
+  authController.yeniSifreyiKaydet
+);
 router.get(
   "/forget-password",
   authMiddleware.oturumAcilmamis,

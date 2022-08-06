@@ -169,8 +169,88 @@ const forgetPasswordFormunuGoster = (req, res, next) => {
   });
 };
 const forgetPassword = async (req, res, next) => {
-  res.render("forget_password", { layout: "./layout/auth_layout.ejs" });
+  const hatalar = validationResult(req);
+
+  if (!hatalar.isEmpty()) {
+    req.flash("validation_error", hatalar.array());
+    req.flash("email", req.body.email);
+
+    //console.log(req.session);
+    res.redirect("/forget-password");
+  }
+  //burası calısıyorsa kullanıcı düzgün bir mail girmiştir
+  else {
+    try {
+      const _user = await User.findOne({
+        email: req.body.email,
+        emailAktif: true,
+      });
+
+      if (_user) {
+        //kullanıcıya şifre sıfırlama maili atılabilir
+        //MAIL İÇİN TOKEN
+        const jwtBilgileri = {
+          id: _user._id,
+          mail: _user.email,
+        };
+        const secret =
+          //sifre güncellendikten sonra token tekrar kullanılamasın diye secretı sifreyi geciyoruz
+          process.env.RESET_PASSWORD_JWT_SECRET + "-" + _user.sifre;
+        const jwtToken = jwt.sign(jwtBilgileri, secret, { expiresIn: "1d" });
+
+        //MAIL GONDERME ISLEMLERI
+        const url =
+          process.env.WEB_SITE_URL +
+          "reset-password/" +
+          _user._id +
+          "/" +
+          jwtToken;
+
+        let transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.GMAIL_USER,
+            pass: process.env.GMAIL_SIFRE,
+          },
+        });
+
+        await transporter.sendMail(
+          {
+            from: "Nodejs Uygulaması <info@nodejskursu.com",
+            to: _user.email,
+            subject: "Şifre Güncelleme",
+            text: "Şifrenizi oluşturmak için lütfen şu linki tıklayın:" + url,
+          },
+          (error, info) => {
+            if (error) {
+              console.log("bir hata var" + error);
+            }
+            console.log("Mail gönderildi");
+            console.log(info);
+            transporter.close();
+          }
+        );
+
+        req.flash("success_message", [
+          { msg: "Lütfen mail kutunuzu kontrol edin" },
+        ]);
+        res.redirect("/login");
+      } else {
+        req.flash("validation_error", [
+          { msg: "Bu mail kayıtlı değil veya Kullanıcı pasif" },
+        ]);
+        req.flash("email", req.body.email);
+        res.redirect("forget-password");
+      }
+      //jwt işlemleri
+    } catch (err) {
+      console.log("user kaydedilirken hata cıktı " + err);
+    }
+  }
+
+  //res.render('forget_password', { layout: './layout/auth_layout.ejs' });
 };
+
 const logout = (req, res, next) => {
   req.logout(); // session altındaki pasport kısmındaki id yi siliyor
   //SESSİONUDA SİLMEK İÇİN
@@ -227,6 +307,103 @@ const verifyMail = (req, res, next) => {
     res.redirect("/login");
   }
 };
+const yeniSifreyiKaydet = async (req, res, next) => {
+  const hatalar = validationResult(req);
+  console.log(hatalar);
+
+  if (!hatalar.isEmpty()) {
+    //validation errorları ve önceki verileri bir hata varsa alıp reset-password rotasına gönderiyoruz
+    //ordanda new_password sayfasına tekrar yönleniyor
+    req.flash("validation_error", hatalar.array());
+    req.flash("sifre", req.body.sifre);
+    req.flash("resifre", req.body.resifre);
+
+    console.log("formdan gelen değerler");
+    console.log(req.body);
+    //console.log(req.session);
+
+    // eğer hata varsa tekrar linke tıklanmış gibi reset password e gönderip hataları gösteriyoruz
+    res.redirect("/reset-password/" + req.body.id + "/" + req.body.token);
+  } else {
+    //hidden ile gizlediğimiz alandaki idyi başkasının id si ile güncelleyip
+    //başka kullanıcının hesap şifresini yenilememesi için şifresi değiştirilecek kullanıcının id si ile
+    //şifre değiştirme talebinde bulunan kullanıcının tokenindeki id aynımı değil mi kontrol ediyoruz
+    const _bulunanUser = await User.findOne({
+      _id: req.body.id,
+      emailAktif: true,
+    });
+
+    const secret =
+      process.env.RESET_PASSWORD_JWT_SECRET + "-" + _bulunanUser.sifre;
+
+    try {
+      jwt.verify(req.body.token, secret, async (e, decoded) => {
+        if (e) {
+          req.flash("error", "Kod Hatalı veya Süresi Geçmiş");
+          res.redirect("/forget-password");
+        } else {
+          //HATA YOKSA HASH LE YENİ SİFRENİN KAYDI
+          const hashedPassword = await bcrypt.hash(req.body.sifre, 10);
+          const sonuc = await User.findByIdAndUpdate(req.body.id, {
+            sifre: hashedPassword,
+          });
+
+          if (sonuc) {
+            req.flash("success_message", [
+              { msg: "Başarıyla şifre güncellendi" },
+            ]);
+            res.redirect("/login");
+          } else {
+            req.flash(
+              "error",
+              "Lütfen tekrar şifre sıfırlama adımlarını yapın"
+            );
+            res.redirect("/login");
+          }
+        }
+      });
+    } catch (err) {
+      console.log("hata cıktı" + err);
+    }
+  }
+};
+const yeniSifreFormuGoster = async (req, res, next) => {
+  //gönderdiğimiz linke tıklandığında paramsın içindeki id ve tokeni alıyoruz
+  const linktekiID = req.params.id;
+  const linktekiToken = req.params.token;
+  console.log(req.params.id);
+  if (linktekiID && linktekiToken) {
+    const _bulunanUser = await User.findOne({ _id: linktekiID }); //db den kullanıcıyı buluyoruz
+    console.log(_bulunanUser);
+    const secret =
+      process.env.RESET_PASSWORD_JWT_SECRET + "-" + _bulunanUser.sifre;
+
+    try {
+      jwt.verify(linktekiToken, secret, async (e, decoded) => {
+        if (e) {
+          req.flash("error", "Kod Hatalı veya Süresi Geçmiş");
+          res.redirect("/forget-password");
+        } else {
+          res.render("new_password", {
+            //id ve token değerlerinin kaybolmaması için parametre olarak req body e eklemek için gönderyoruz
+            //daha sonra new_password.ejs de type hidden olan input içinde gizleyerek bodye eklenip gönderiliyor
+            //ve yenisifre kaydette req.body.token seklinde yakalanıyor
+            id: linktekiID,
+            token: linktekiToken,
+            layout: "./layout/auth_layout.ejs",
+            title: "Şifre Güncelle",
+          });
+        }
+      });
+    } catch (err) {}
+  } else {
+    req.flash("validation_error", [
+      { msg: "Lütfen maildeki linki tıklayın. Token Bulunamadı" },
+    ]);
+
+    res.redirect("forget-password");
+  }
+};
 module.exports = {
   loginFormunuGoster,
   registerFormunuGoster,
@@ -236,4 +413,6 @@ module.exports = {
   forgetPassword,
   logout,
   verifyMail,
+  yeniSifreFormuGoster,
+  yeniSifreyiKaydet,
 };
